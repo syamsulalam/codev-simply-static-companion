@@ -47,8 +47,13 @@ spl_autoload_register( function ( $class ) {
 	}
 } );
 
+// Register WP-CLI commands early so WP-CLI discovers the command during CLI bootstrap
+if ( defined( 'WP_CLI' ) && \WP_CLI ) {
+	CLI\CLI_Commands::register();
+}
+
 /**
- * Bootstrap the companion plugin after all plugins have loaded.
+ * Bootstrap the companion plugin at priority 20 (after Simply Static Free boots at priority 10).
  */
 add_action( 'plugins_loaded', function () {
 	// Require Simply Static Free to be active
@@ -63,4 +68,4 @@ add_action( 'plugins_loaded', function () {
 
 	// Initialize the singleton plugin instance
 	Plugin::instance();
-} );
+}, 20 );
