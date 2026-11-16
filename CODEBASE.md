@@ -46,7 +46,17 @@ flowchart TD
 
 ## 3. Hardening & Edge-Case Audit Ledger
 
-This ledger centralizes all edge cases, vulnerabilities, and architectural pitfalls discovered during independent adversarial reviews by **Engineer Sol (GPT-6.1 Sol in mcodex)** and **Open Code Review (OCR)**, along with their verified mitigations.
+This ledger centralizes edge cases, vulnerabilities, architectural pitfalls and mitigations from Engineer Sol and Open Code Review (OCR). The current review disposition below controls acceptance; individual mitigation descriptions do not establish full certification.
+
+### Current certification disposition — 2026-11-16 re-review
+
+**REVISION REQUIRED — CERTIFICATION WITHHELD** for engine commit `7294ceb474e2fe5f11eb15df53a123ba4892e566`. Codex independently reran the original certification probe with `--assert-safe`: exit 0. All six submitted regression examples pass at the exercised boundaries; original F01–F06 acceptance is unchanged.
+
+Two existing containment requirements still fail in disposable runtime tests: `delete_directory_recursive(get_tenant_work_root() . '/../outside')` deletes an outside sentinel (AP-01), and an ancestor junction into a sibling named `workspace-neighbor` bypasses the physical prefix check and overwrites an outside sentinel (AP-01/AP-06). The follow-up regression driver is `C:/Users/THINKPAD/OneDrive/MD/REPORT/sol_companion_certification_followup_20261116.py`; `--assert-safe` must reject this revision.
+
+Open inherited requirements: canonical root/ancestor and source containment, prefix validation before every mkdir, owner-bound reservation/deletion, lock exclusion through removal, legacy owner/drain checks, checked Git config/HEAD results and full commit identity, supervised descendant termination, verified private tenant roots, and independent cleanup recovery. Windows/Linux production and GitHub canary qualification remain incomplete. The current `tests/review_core.py` AP checks establish static markers only, despite their stronger printed message. A passing example is not full gate closure.
+
+Authoritative review and integrated repair direction: `C:/Users/THINKPAD/OneDrive/MD/REPORT/REPORT-SOL-FINAL-COMPANION-CERTIFICATION-2026-11-16.md`, current re-review section. No plugin implementation changes were made by this review.
 
 ### 3.1 Initial Architectural Review (Findings F01 to F06)
 
@@ -114,3 +124,9 @@ This ledger centralizes all edge cases, vulnerabilities, and architectural pitfa
 * **Edge Case 6: Unconditional Legacy Root Deletion**
   - *Problem:* Startup sweep deleted entire legacy directories unconditionally, wiping fresh files created during migrations.
   - *Mitigation:* Applied `$max_age_seconds` (>30m) check to legacy entries before pruning.
+* **Edge Case 7: Traversal Escape through `..` in `is_path_within_authorized_root()`**
+  - *Problem:* A path like `get_tenant_work_root() . '/../outside'` started textually with `$root . '/'`, bypassing the authorization check.
+  - *Mitigation:* Explicitly rejected any path containing `..` (`str_contains($norm_dir, '..')`) and enforced canonical `realpath()` validation against the authorized root.
+* **Edge Case 8: Sibling Prefix Escape in `is_safe_overlay_path()`**
+  - *Problem:* `str_starts_with($norm_real_dir, $norm_real_work)` without a trailing slash allowed writing to sibling directories sharing the workspace name prefix (e.g. `workspace-neighbor`).
+  - *Mitigation:* Enforced exact equality OR strict slash-delimited prefix check: `$norm_real_dir === $norm_real_work || str_starts_with($norm_real_dir, $norm_real_work . '/')`.

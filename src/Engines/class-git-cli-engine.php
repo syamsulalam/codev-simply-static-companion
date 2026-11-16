@@ -75,7 +75,7 @@ class Git_Cli_Engine {
 	 */
 	public static function is_path_within_authorized_root( string $dir ): bool {
 		$norm_dir = untrailingslashit( wp_normalize_path( $dir ) );
-		if ( empty( $norm_dir ) ) {
+		if ( empty( $norm_dir ) || str_contains( $norm_dir, '..' ) ) {
 			return false;
 		}
 
@@ -94,6 +94,18 @@ class Git_Cli_Engine {
 
 		foreach ( $roots as $root ) {
 			if ( ! empty( $root ) && str_starts_with( $norm_dir, $root . '/' ) && $norm_dir !== $root ) {
+				// Verify canonical realpath if target already exists
+				if ( file_exists( $norm_dir ) ) {
+					$real_dir  = realpath( $norm_dir );
+					$real_root = realpath( $root );
+					if ( false !== $real_dir && false !== $real_root ) {
+						$norm_real_dir  = untrailingslashit( wp_normalize_path( $real_dir ) );
+						$norm_real_root = untrailingslashit( wp_normalize_path( $real_root ) );
+						if ( $norm_real_dir !== $norm_real_root && ! str_starts_with( $norm_real_dir, $norm_real_root . '/' ) ) {
+							return false;
+						}
+					}
+				}
 				return true;
 			}
 		}
@@ -367,10 +379,10 @@ class Git_Cli_Engine {
 				$real_dir  = realpath( $current );
 				$real_work = realpath( $norm_work );
 				if ( false !== $real_dir && false !== $real_work ) {
-					$norm_real_dir  = wp_normalize_path( $real_dir );
+					$norm_real_dir  = untrailingslashit( wp_normalize_path( $real_dir ) );
 					$norm_real_work = untrailingslashit( wp_normalize_path( $real_work ) );
-					if ( ! str_starts_with( $norm_real_dir, $norm_real_work ) ) {
-						return false; // Reparse point escaping workspace
+					if ( $norm_real_dir !== $norm_real_work && ! str_starts_with( $norm_real_dir, $norm_real_work . '/' ) ) {
+						return false; // Reparse point escaping workspace into sibling directory
 					}
 				}
 			}
