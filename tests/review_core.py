@@ -1,5 +1,5 @@
 """
-Test Driver for Sol Architectural Review Core Findings (F01 - F06)
+Test Driver for Sol Architectural Review Core Findings (F01 - F06) & Auto-Prune Invariant
 Reference: REPORT-SOL-SIMPLY-STATIC-COMPANION-REVIEW-2026-11-16.md Section 11
 """
 
@@ -106,6 +106,15 @@ def run_static_audit():
     ), "F03 Violation: Missing remote branch fetch/overlay"
     print("✓ F03 Verified: Git CLI engine fetches base and overlays diff")
 
+    # Auto-Prune Invariant: Assert Git CLI engine destroys worktree in finally and sweeps stale workspaces
+    assert (
+        "finally {" in cli_code and "$this->teardown_workspace();" in cli_code
+    ), "Auto-Prune Violation: Git CLI engine must teardown workspace in finally block"
+    assert (
+        "prune_stale_workspaces" in cli_code
+    ), "Auto-Prune Violation: Missing startup orphan workspace pruning sweep"
+    print("✓ Auto-Prune Verified: Deterministic teardown in finally + startup sweep")
+
     # F04: Assert _headers does not mark CSS/JS mutable assets as immutable
     edge_file = os.path.join(
         base_dir, "src", "Hardening", "class-cloudflare-edge.php"
@@ -156,7 +165,7 @@ def run_static_audit():
     print("✓ F06 Verified: WP-CLI uses public accessor with timeout enforcement")
 
     print(
-        "\nAll static qualification checks for Sol findings F01-F06 PASSED!"
+        "\nAll static qualification checks (F01-F06 + Auto-Prune) PASSED!"
     )
     return True
 
