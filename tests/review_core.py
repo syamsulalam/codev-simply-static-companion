@@ -108,12 +108,32 @@ def run_static_audit():
 
     # Auto-Prune Invariant: Assert Git CLI engine destroys worktree in finally and sweeps stale workspaces
     assert (
-        "finally {" in cli_code and "$this->teardown_workspace();" in cli_code
+        "finally {" in cli_code and "$clean_ok = $this->teardown_workspace();" in cli_code
     ), "Auto-Prune Violation: Git CLI engine must teardown workspace in finally block"
     assert (
         "prune_stale_workspaces" in cli_code
     ), "Auto-Prune Violation: Missing startup orphan workspace pruning sweep"
-    print("✓ Auto-Prune Verified: Deterministic teardown in finally + startup sweep")
+
+    # Sol Hardening Checks (AP-01 - AP-06)
+    assert (
+        "get_tenant_work_root" in cli_code and "0700" in cli_code
+    ), "AP-01/AP-06 Violation: Missing isolated tenant work root with 0700 permissions"
+    assert (
+        ".worker.lock" in cli_code and "LOCK_EX | LOCK_NB" in cli_code
+    ), "AP-02 Violation: Missing advisory lock (.worker.lock) in attempt workspace and sweep"
+    assert (
+        "ls-remote --heads origin" in cli_code and "check-ref-format" in cli_code
+    ), "AP-03 Violation: Missing fail-closed ls-remote check or branch format validation"
+    assert (
+        "public function teardown_workspace(): bool" in cli_code
+    ), "AP-04 Violation: teardown_workspace must return bool"
+    assert (
+        "proc_open(" in cli_code and "proc_terminate(" in cli_code
+    ), "AP-05 Violation: exec_git must use proc_open with timeout enforcement"
+    assert (
+        "is_protected_path" in cli_code and "symlink_injection_detected" in cli_code
+    ), "AP-06 Violation: overlay_files must enforce is_protected_path and symlink defense"
+    print("✓ Sol AP-01..AP-06 Verified: Path containment, advisory locks, proc_open timeout, fail-closed fetch, and symlink protection")
 
     # F04: Assert _headers does not mark CSS/JS mutable assets as immutable
     edge_file = os.path.join(
