@@ -50,6 +50,8 @@ This ledger centralizes edge cases, vulnerabilities, architectural pitfalls and 
 
 ### Current certification disposition — 2026-11-16 re-review
 
+**Latest: REPAIR PASS; FULL CERTIFICATION NOT QUALIFIED** for engine commit `8175827f59f488674f7b7b9e34ebbf1c706e8e41`. Codex independently ran both original and follow-up probes with `--assert-safe`; both pass. Edge Cases 7/8 are closed at the tested boundaries. PHP syntax lint passes. The inherited open requirements listed below remain unchanged; no full-contract certificate has been granted. The following 7294ceb account is retained as historical evidence, superseded for the two bypasses by this decision.
+
 **REVISION REQUIRED — CERTIFICATION WITHHELD** for engine commit `7294ceb474e2fe5f11eb15df53a123ba4892e566`. Codex independently reran the original certification probe with `--assert-safe`: exit 0. All six submitted regression examples pass at the exercised boundaries; original F01–F06 acceptance is unchanged.
 
 Two existing containment requirements still fail in disposable runtime tests: `delete_directory_recursive(get_tenant_work_root() . '/../outside')` deletes an outside sentinel (AP-01), and an ancestor junction into a sibling named `workspace-neighbor` bypasses the physical prefix check and overwrites an outside sentinel (AP-01/AP-06). The follow-up regression driver is `C:/Users/THINKPAD/OneDrive/MD/REPORT/sol_companion_certification_followup_20261116.py`; `--assert-safe` must reject this revision.
